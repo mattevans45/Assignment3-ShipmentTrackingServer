@@ -5,7 +5,7 @@ import java.io.FileReader
 import java.io.IOException
 import java.util.*
 
-class FileProcessor {
+class FileProcessor : AutoCloseable {
     private var fileName: String = ""
     private val updateQueue: Queue<String> = LinkedList()
     private var fileReader: BufferedReader? = null
@@ -13,7 +13,19 @@ class FileProcessor {
     private var totalUpdates: Int = 0
     private var processedUpdates: Int = 0
 
+    override fun close() {
+        try {
+            fileReader?.close()
+            fileReader = null
+            println("DEBUG: FileProcessor - File closed successfully")
+        } catch (e: IOException) {
+            println("ERROR: FileProcessor - Error closing file: ${e.message}")
+        }
+    }
+
     fun loadFile(fileName: String): Boolean {
+        close()
+        
         return try {
             this.fileName = fileName
             fileReader = BufferedReader(FileReader(fileName))
@@ -22,6 +34,7 @@ class FileProcessor {
             true
         } catch (e: IOException) {
             println("ERROR: Failed to load file: $fileName - ${e.message}")
+            close()
             false
         }
     }
@@ -32,13 +45,20 @@ class FileProcessor {
         processedUpdates = 0
         totalUpdates = 0
         
-        fileReader?.use { reader ->
-            reader.lineSequence().forEach { line ->
-                if (validateUpdateLine(line)) {
-                    updateQueue.offer(line.trim())
-                    totalUpdates++
+        try {
+            fileReader?.use { reader ->
+                reader.lineSequence().forEach { line ->
+                    if (validateUpdateLine(line)) {
+                        updateQueue.offer(line.trim())
+                        totalUpdates++
+                    }
                 }
             }
+
+            fileReader = null
+        } catch (e: IOException) {
+            println("ERROR: Error reading file: ${e.message}")
+            close()
         }
     }
 
@@ -46,29 +66,20 @@ class FileProcessor {
         return if (updateQueue.isNotEmpty()) {
             currentLine++
             processedUpdates++
-            val nextUpdate = updateQueue.poll()
-            println("DEBUG: FileProcessor returning update $processedUpdates/$totalUpdates: $nextUpdate")
-            nextUpdate
+            updateQueue.poll()
         } else {
-            println("DEBUG: FileProcessor has no more updates")
             null
         }
     }
 
     fun hasMoreUpdates(): Boolean = updateQueue.isNotEmpty()
 
-    fun closeFile() {
-        fileReader?.close()
-        fileReader = null
-    }
-
     fun validateUpdateLine(line: String): Boolean {
         if (line.isBlank()) return false
         
         val parts = line.split(",")
         if (parts.size < 3) return false
-        
-        // Basic validation: updateType, shipmentId, timestamp
+
         val updateType = parts[0].trim()
         val shipmentId = parts[1].trim()
         val timestamp = parts[2].trim()
@@ -78,27 +89,18 @@ class FileProcessor {
                timestamp.toLongOrNull() != null
     }
 
-    fun resetToBeginning() {
-        updateQueue.clear()
-        currentLine = 0
-        processedUpdates = 0
-        if (fileName.isNotEmpty()) {
-            loadFile(fileName)
-        }
-    }
-    
-    // Methods needed by SimulationController
     fun getTotalUpdates(): Int = totalUpdates
-    fun getProcessedUpdatesCount(): Int = processedUpdates
-    fun getCurrentLineNumber(): Int = currentLine
-    
-    fun getProgress(): Float = if (totalUpdates > 0) {
-        processedUpdates.toFloat() / totalUpdates.toFloat()
-    } else 0f
-    
-    fun getRemainingUpdates(): Int = totalUpdates - processedUpdates
-    
+
     fun isEmpty(): Boolean = updateQueue.isEmpty()
     
-    fun getFileName(): String = fileName
+
+
+    fun reset() {
+        close()
+        updateQueue.clear()
+        fileName = ""
+        currentLine = 0
+        totalUpdates = 0
+        processedUpdates = 0
+    }
 }

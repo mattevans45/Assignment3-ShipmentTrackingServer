@@ -8,74 +8,56 @@ import java.time.format.DateTimeFormatter
 class Shipment(
     private val id: String,
     private var status: ShipmentStatus,
-    private val createdAt: Long,
-    private var expectedDeliveryDate: Long? = null,
+    private val createdTimestamp: Long,
+    private var expectedDeliveryDateTimestamp: Long? = null,
     private var currentLocation: String? = null,
     private val notesList: MutableList<String> = mutableListOf()
 ) {
     private val updates: MutableList<ShippingUpdate> = mutableListOf()
-    private val simulator: TrackingSimulator = TrackingSimulator.getInstance()
 
-    // Getters
+
     fun getId(): String = id
     fun getStatus(): ShipmentStatus = status
-    fun getCreatedAt(): Long = createdAt
-    fun getExpectedDeliveryDate(): Long? = expectedDeliveryDate
+    fun getCreatedAt(): Long = createdTimestamp
+    fun getExpectedDeliveryDate(): Long? = expectedDeliveryDateTimestamp
     fun getCurrentLocation(): String? = currentLocation
-    fun getNotes(): String? = if (notesList.isEmpty()) null else notesList.joinToString("\n")
+    fun getNotes(): List<String> = notesList.toList()
     fun getUpdates(): List<ShippingUpdate> = updates.toList()
-    fun getNotesList(): List<String> = notesList.toList()
 
-    // Simple setters - just change data, no update creation
     fun updateStatus(newStatus: ShipmentStatus) {
         if (status != newStatus) {
             status = newStatus
-            println("DEBUG: Shipment ${id} status changed to $newStatus")
-            notifyChange()
         }
     }
 
     fun setExpectedDeliveryDate(date: Long) {
-        if (expectedDeliveryDate != date) {
-            expectedDeliveryDate = date
-            println("DEBUG: Shipment ${id} delivery date changed to $date")
-            notifyChange()
+        if (expectedDeliveryDateTimestamp != date) {
+            expectedDeliveryDateTimestamp = date
         }
     }
 
-    fun setCurrentLocation(location: String) {
+    fun setCurrentLocation(location: String?) {
         if (currentLocation != location) {
             currentLocation = location
-            println("DEBUG: Shipment ${id} location changed to $location")
-            notifyChange()
         }
     }
 
     fun addNote(note: String) {
         notesList.add(note)
-        println("DEBUG: Shipment ${id} note added: $note")
-        notifyChange()
     }
 
-    // Only called from AbstractUpdateStrategy
     fun addUpdate(update: ShippingUpdate) {
         updates.add(update)
-        println("DEBUG: Shipment ${id} update added: ${update.getNewStatus()}")
-        notifyChange()
     }
 
-    private fun notifyChange() {
-        println("DEBUG: Shipment ${id} notifying observers of change")
-        simulator.notifyObservers(this)
-    }
-
-    // Formatting methods
     fun getFormattedDeliveryDate(): String {
-        val deliveryDate = expectedDeliveryDate
-        if (deliveryDate == null || deliveryDate == 0L) return "Not set"
-        val instant = Instant.ofEpochMilli(deliveryDate)
-        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        return if (expectedDeliveryDateTimestamp == null || expectedDeliveryDateTimestamp!! <= 0) {
+            "Unknown"
+        } else {
+            val instant = Instant.ofEpochMilli(expectedDeliveryDateTimestamp!!)
+            val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm")
+            instant.atZone(ZoneId.systemDefault()).format(formatter)
+        }
     }
 
     fun getFormattedUpdateHistory(): List<String> {
@@ -89,4 +71,26 @@ class Shipment(
         val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
         return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
     }
+
+    // Add this method to your Shipment class
+    fun copy(): Shipment {
+        val newShipment = Shipment(
+            id = this.id,
+            status = this.status,
+            createdTimestamp = this.createdTimestamp,
+            expectedDeliveryDateTimestamp = this.expectedDeliveryDateTimestamp
+        )
+        
+        // Copy current location
+        newShipment.setCurrentLocation(this.getCurrentLocation())
+        
+        // Copy all notes
+        this.getNotes().forEach { newShipment.addNote(it) }
+        
+        // Copy all updates
+        this.getUpdates().forEach { newShipment.addUpdate(it) }
+        
+        return newShipment
+    }
+
 }

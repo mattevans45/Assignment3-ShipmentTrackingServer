@@ -1,29 +1,18 @@
 package org.example.project
 
-import kotlinx.coroutines.*
-
 class UpdateProcessor {
     private val strategyFactory: UpdateStrategyFactory = UpdateStrategyFactory()
-    private val simulator: TrackingSimulator = TrackingSimulator.getInstance()
 
-    suspend fun processUpdate(updateLine: String) {
+    fun processUpdate(updateLine: String) {
         try {
-            println("DEBUG: Processing update line: $updateLine")
             val updateData = parseUpdateLine(updateLine)
-            println("DEBUG: Parsed update: ${updateData.getUpdateType()} for ${updateData.getShipmentId()}")
-            
-            // Validate the update data
-            validateUpdateData(updateData)
-            
+
             val strategy = strategyFactory.createStrategy(updateData.getUpdateType())
-            println("DEBUG: Using strategy: ${strategy.javaClass.simpleName}")
-            
-            // Let the strategy handle everything - including shipment creation/retrieval
+
             strategy.execute(updateData)
             
         } catch (e: Exception) {
-            println("ERROR: Failed to process update: ${e.message}")
-            e.printStackTrace()
+            println("ERROR: UpdateProcessor - Failed to process update: ${e.message}")
         }
     }
     

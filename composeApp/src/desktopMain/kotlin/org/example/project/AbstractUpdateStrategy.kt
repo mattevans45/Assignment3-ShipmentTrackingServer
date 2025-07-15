@@ -1,57 +1,49 @@
 package org.example.project
 
-import kotlinx.coroutines.*
-
 abstract class AbstractUpdateStrategy(private val updateType: String) : UpdateStrategy {
     protected val simulator: TrackingSimulator = TrackingSimulator.getInstance()
-
-    override fun validateUpdate(updateData: UpdateData) {
-        if (updateData.getUpdateType() != updateType) {
-            throw IllegalArgumentException("Invalid update type: ${updateData.getUpdateType()}")
-        }
-    }
-
-    override fun getUpdateType(): String = updateType
     
-    protected suspend fun getOrCreateShipment(updateData: UpdateData): Shipment {
-        val existingShipment = simulator.getShipment(updateData.getShipmentId())
-        
-        if (existingShipment != null) {
-            return existingShipment
-        }
-        
-        val newShipment = Shipment(
-            id = updateData.getShipmentId(),
-            status = ShipmentStatus.CREATED,
-            createdAt = updateData.getTimestamp()
-        )
-        
-        simulator.addShipment(newShipment)
-        return newShipment
-    }
-    
-    // Template method - handles the common workflow
-    override suspend fun execute(updateData: UpdateData) {
-        println("DEBUG: ${this.javaClass.simpleName} executing for ${updateData.getShipmentId()}")
-        
+    override fun execute(updateData: UpdateData) {
         validateUpdate(updateData)
-        val shipment = getOrCreateShipment(updateData)
+        
+        val shipmentId = updateData.getShipmentId()
+        val shipment = simulator.getShipment(shipmentId) 
+            ?: handleShipmentNotFound(updateData)
+        
         val previousStatus = shipment.getStatus()
-        
-        // Let strategy handle the specific logic
-        processUpdate(shipment, updateData)
-        
-        // Create and add the update record here (single responsibility)
-        val shippingUpdate = createShippingUpdate(shipment, previousStatus, updateData)
-        shipment.addUpdate(shippingUpdate)
-        
-        println("DEBUG: ${this.javaClass.simpleName} completed for ${shipment.getId()}")
+
+        val updatedShipment = shipment.copy()
+
+        processUpdate(updatedShipment, updateData)
+
+        val shippingUpdate = createShippingUpdate(
+            updatedShipment, 
+            previousStatus,  
+            updateData
+        )
+        updatedShipment.addUpdate(shippingUpdate)
+        simulator.updateShipment(updatedShipment)
+        simulator.notifyObservers(updatedShipment)
     }
     
-    // Each strategy implements this - only business logic, no update creation
+    private fun handleShipmentNotFound(updateData: UpdateData): Shipment {
+        if (updateType == "CREATED") {
+            val newShipment = Shipment(
+                id = updateData.getShipmentId(),
+                status = ShipmentStatus.CREATED,
+                createdTimestamp = updateData.getTimestamp()
+            )
+            simulator.addShipment(newShipment)
+            simulator.notifyShipmentCreated(newShipment)
+            return newShipment
+        } else {
+            simulator.notifyShipmentNotFound(updateData.getShipmentId())
+            throw IllegalStateException("Shipment not found: ${updateData.getShipmentId()}")
+        }
+    }
+    
     protected abstract fun processUpdate(shipment: Shipment, updateData: UpdateData)
     
-    // Helper method to create shipping updates
     private fun createShippingUpdate(
         shipment: Shipment, 
         previousStatus: ShipmentStatus, 
@@ -65,14 +57,30 @@ abstract class AbstractUpdateStrategy(private val updateType: String) : UpdateSt
             notes = createUpdateNotes(updateData)
         )
     }
-    
-    // Override this in strategies that need custom notes
+
     protected open fun createUpdateNotes(updateData: UpdateData): String? {
         return when (updateType) {
             "NOTEADDED" -> "Note added: ${updateData.getOtherInfo()}"
             "LOCATION" -> "Location updated to: ${updateData.getOtherInfo()}"
             "CANCELED" -> "Cancellation reason: ${updateData.getOtherInfo()}"
+            "DELAYED" -> "Delayed until: ${updateData.getOtherInfo()?.let { formatTimestamp(it.toLong()) } ?: "Unknown"}"
             else -> null
+        }
+    }
+    
+    private fun formatTimestamp(timestamp: Long): String {
+        val instant = java.time.Instant.ofEpochMilli(timestamp)
+        val dateTime = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault())
+        return dateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    }
+
+
+    override fun validateUpdate(updateData: UpdateData) {
+        if (updateData.getShipmentId().isBlank()) {
+            throw IllegalArgumentException("Shipment ID cannot be blank")
+        }
+        if (updateData.getTimestamp() <= 0) {
+            throw IllegalArgumentException("Invalid timestamp")
         }
     }
 }
