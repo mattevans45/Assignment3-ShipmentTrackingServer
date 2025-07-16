@@ -24,21 +24,23 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import javax.annotation.processing.Generated
 
 
-
+@Generated
 @Composable
 @Preview
 fun App() {
     MaterialTheme { ShipmentTrackingApp() }
 }
 
+@Generated
 data class ToastMessage(
     val message: String,
     val isError: Boolean,
     val id: Long = System.currentTimeMillis()
 )
-
+@Generated
 @Composable
 fun ShipmentTrackingApp() {
     val simulator = remember { TrackingSimulator.getInstance() }
@@ -193,7 +195,7 @@ fun ShipmentTrackingApp() {
         ToastOverlay(toastMessages = toastMessages)
     }
 }
-
+@Generated
 @Composable
 fun ToastOverlay(toastMessages: List<ToastMessage>) {
     Box(
@@ -214,6 +216,7 @@ fun ToastOverlay(toastMessages: List<ToastMessage>) {
     }
 }
 
+@Generated
 @Composable
 fun ToastMessageDisplay(message: String, isError: Boolean) {
     val backgroundColor = if (isError) Color(0xFFFFEBEE) else Color(0xFFE8F5E8)
@@ -316,7 +319,7 @@ fun SimulationPanel(
     }
 }
 
-
+@Generated
 @Composable
 fun TrackingInput(
     shipmentId: String,
@@ -370,6 +373,7 @@ fun TrackingInput(
     }
 }
 
+@Generated
 @Composable
 fun ShipmentDisplay(
     viewHelper: TrackerViewHelper,
@@ -417,6 +421,7 @@ fun ShipmentDisplay(
     }
 }
 
+@Generated
 @Composable
 fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
     Card(

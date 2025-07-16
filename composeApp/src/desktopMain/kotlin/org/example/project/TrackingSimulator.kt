@@ -4,13 +4,23 @@ import java.util.concurrent.ConcurrentHashMap
 
 class TrackingSimulator private constructor() : Subject {
     companion object {
-        @Volatile
         private var instance: TrackingSimulator? = null
 
         fun getInstance(): TrackingSimulator {
-            return instance ?: synchronized(this) {
-                instance ?: TrackingSimulator().also { instance = it }
+            if (instance == null) {
+                instance = TrackingSimulator()
             }
+            return instance!!
+        }
+
+        @JvmStatic
+        fun setTestInstance(testInstance: TrackingSimulator) {
+            instance = testInstance
+        }
+
+        @JvmStatic
+        fun resetInstance() {
+            instance = null
         }
     }
 

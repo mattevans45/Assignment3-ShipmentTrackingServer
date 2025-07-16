@@ -94,6 +94,7 @@ class FileProcessor : AutoCloseable {
     fun isEmpty(): Boolean = updateQueue.isEmpty()
     
 
+    fun getFileName(): String = fileName
 
     fun reset() {
         close()

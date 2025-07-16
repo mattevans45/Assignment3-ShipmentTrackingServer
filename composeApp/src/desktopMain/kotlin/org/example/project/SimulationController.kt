@@ -10,23 +10,21 @@ class SimulationController {
             println("DEBUG: Simulation already running")
             return false
         }
-
+        
         if (fileProcessor.isEmpty()) {
             println("ERROR: No file loaded or file is empty")
             return false
         }
-
+        
         try {
-            // Reset the simulation state
             TrackingSimulator.getInstance().clearAllShipments()
             
-            // Initialize the simulation
             isRunning = true
             println("DEBUG: Simulation started with ${fileProcessor.getTotalUpdates()} updates")
             
             return true
         } catch (e: Exception) {
-            fileProcessor.close() // Ensure file is closed if exception occurs
+            fileProcessor.close()
             println("ERROR: Failed to start simulation: ${e.message}")
             isRunning = false
             throw e
@@ -36,7 +34,7 @@ class SimulationController {
     fun stopSimulation() {
         println("DEBUG: Stopping simulation...")
         isRunning = false
-        fileProcessor.close() // Ensure file is closed when simulation stops
+        fileProcessor.close() 
     }
 
     fun isSimulationRunning(): Boolean = isRunning
@@ -57,8 +55,7 @@ class SimulationController {
             return true
         } catch (e: Exception) {
             println("ERROR: Failed to process update: ${e.message}")
-            // Continue running but log the error
-            return fileProcessor.hasMoreUpdates() // Return true if we have more updates to try
+            return fileProcessor.hasMoreUpdates() 
         }
     }
 
@@ -87,7 +84,6 @@ class SimulationController {
     }
     fun hasMoreUpdates(): Boolean = fileProcessor.hasMoreUpdates()
 
-    // Add a cleanup method for the controller
     fun cleanup() {
         fileProcessor.close()
     }
