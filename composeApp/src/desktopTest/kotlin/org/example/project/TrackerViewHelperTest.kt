@@ -17,7 +17,8 @@ class TrackerViewHelperTest {
 
     @AfterEach
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
 
     @Test
@@ -35,14 +36,11 @@ class TrackerViewHelperTest {
         viewHelper.trackShipment(shipmentId)
 
         // Assert
-        val trackedShipments = viewHelper.trackedShipmentData.value
+        val trackedShipments = viewHelper.trackedShipmentData
         assertEquals(1, trackedShipments.size)
         assertEquals(shipment, trackedShipments[shipmentId])
-
-        // Clean up
-        TrackingSimulator.resetInstance()
     }
-    
+
     @Test
     fun `stopTracking removes shipment from tracked list`() {
         // Arrange
@@ -50,57 +48,48 @@ class TrackerViewHelperTest {
         val shipment = Shipment(shipmentId, ShipmentStatus.CREATED, 456)
         val mockSimulator = mock<TrackingSimulator>()
         whenever(mockSimulator.getShipment(shipmentId)).thenReturn(shipment)
-        
 
+        TrackingSimulator.setTestInstance(mockSimulator)
         viewHelper.trackShipment(shipmentId)
-        
+
         // Act
         viewHelper.stopTracking(shipmentId)
-        
+
         // Assert
-        val trackedShipments = viewHelper.trackedShipmentData.value
+        val trackedShipments = viewHelper.trackedShipmentData
         assertEquals(0, trackedShipments.size)
         assertTrue(shipmentId !in trackedShipments)
     }
-    
+
     @Test
     fun `onShipmentUpdated updates tracked shipment in state`() {
         // Arrange
         val shipmentId = "123"
-        val originalShipment = Shipment(shipmentId, ShipmentStatus.CREATED, 456)
-        val updatedShipment = Shipment(shipmentId, ShipmentStatus.SHIPPED, 456)
-        
-        // Add to tracked shipments using reflection
-        val trackedShipmentsField = TrackerViewHelper::class.java.getDeclaredField("trackedShipments")
-        trackedShipmentsField.isAccessible = true
-        (trackedShipmentsField.get(viewHelper) as MutableSet<String>).add(shipmentId)
-        
-        val trackedShipmentDataField = TrackerViewHelper::class.java.getDeclaredField("_trackedShipmentData")
-        trackedShipmentDataField.isAccessible = true
-        (trackedShipmentDataField.get(viewHelper) as androidx.compose.runtime.MutableState<Map<String, Shipment>>)
-            .value = mapOf(shipmentId to originalShipment)
-        
+        val shipment = Shipment(shipmentId, ShipmentStatus.CREATED, 456)
+        viewHelper.trackShipment(shipmentId)
+
         // Act
-        viewHelper.onShipmentUpdated(updatedShipment)
-        
+        shipment.updateStatus(ShipmentStatus.SHIPPED)
+        viewHelper.onShipmentUpdated(shipment)
+
         // Assert
-        val trackedShipments = viewHelper.trackedShipmentData.value
-        assertEquals(updatedShipment, trackedShipments[shipmentId])
+        val trackedShipments = viewHelper.trackedShipmentData
+        assertEquals(ShipmentStatus.SHIPPED, trackedShipments[shipmentId]?.status)
     }
-    
+
     @Test
-    fun `onShipmentCreated does not modify state`() {
+    fun `onShipmentCreated does not modify state if not tracked`() {
         // Arrange
         val shipment = Shipment("123", ShipmentStatus.CREATED, 456)
-        val initialState = viewHelper.trackedShipmentData.value
-        
+        val initialState = viewHelper.trackedShipmentData.toMap()
+
         // Act
         viewHelper.onShipmentCreated(shipment)
-        
+
         // Assert
-        assertEquals(initialState, viewHelper.trackedShipmentData.value)
+        assertEquals(initialState, viewHelper.trackedShipmentData.toMap())
     }
-    
+
     @Test
     fun `resetSimulation clears all tracked shipments`() {
         // Arrange
@@ -108,15 +97,15 @@ class TrackerViewHelperTest {
         val shipment = Shipment(shipmentId, ShipmentStatus.CREATED, 456)
         val mockSimulator = mock<TrackingSimulator>()
         whenever(mockSimulator.getShipment(shipmentId)).thenReturn(shipment)
-        
 
+        TrackingSimulator.setTestInstance(mockSimulator)
         viewHelper.trackShipment(shipmentId)
-        
+
         // Act
         viewHelper.resetSimulation()
-        
+
         // Assert
-        val trackedShipments = viewHelper.trackedShipmentData.value
+        val trackedShipments = viewHelper.trackedShipmentData
         assertEquals(0, trackedShipments.size)
     }
 }

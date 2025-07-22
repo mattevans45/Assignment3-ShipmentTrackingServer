@@ -1,7 +1,7 @@
 package org.example.project
 
 class UpdateStrategyFactory {
-    fun createStrategy(updateType: String): UpdateStrategy {
+    fun createStrategy(updateType: String): AbstractUpdateStrategy {
         return when (updateType.uppercase()) {
             "CREATED" -> CreatedStrategy()
             "SHIPPED" -> ShippedStrategy()

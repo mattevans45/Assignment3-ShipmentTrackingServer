@@ -1,32 +1,31 @@
 package org.example.project
 
-abstract class AbstractUpdateStrategy(private val updateType: String) : UpdateStrategy {
-    protected val simulator: TrackingSimulator = TrackingSimulator.getInstance()
-    
-    override fun execute(updateData: UpdateData) {
+abstract class AbstractUpdateStrategy(protected val updateType: String) {
+    protected val simulator: TrackingSimulator get() = TrackingSimulator.getInstance()
+
+    fun execute(updateData: UpdateData) {
         validateUpdate(updateData)
-        
+
         val shipmentId = updateData.getShipmentId()
-        val shipment = simulator.getShipment(shipmentId) 
-            ?: handleShipmentNotFound(updateData)
-        
-        val previousStatus = shipment.getStatus()
+        val shipment = simulator.getShipment(shipmentId)
+            ?: return handleShipmentNotFound(updateData)
 
-        val updatedShipment = shipment.copy()
+        val previousStatus = shipment.status
 
-        processUpdate(updatedShipment, updateData)
+        // Work with the original shipment (not a copy)
+        processUpdate(shipment, updateData)
 
         val shippingUpdate = createShippingUpdate(
-            updatedShipment, 
-            previousStatus,  
+            shipment,
+            previousStatus,
             updateData
         )
-        updatedShipment.addUpdate(shippingUpdate)
-        simulator.updateShipment(updatedShipment)
-        simulator.notifyObservers(updatedShipment)
+        shipment.addUpdate(shippingUpdate) // This will trigger notifyObservers()
+
+        simulator.updateShipment(shipment)
     }
-    
-    private fun handleShipmentNotFound(updateData: UpdateData): Shipment {
+
+    private fun handleShipmentNotFound(updateData: UpdateData) {
         if (updateType == "CREATED") {
             val newShipment = Shipment(
                 id = updateData.getShipmentId(),
@@ -34,26 +33,23 @@ abstract class AbstractUpdateStrategy(private val updateType: String) : UpdateSt
                 createdTimestamp = updateData.getTimestamp()
             )
             simulator.addShipment(newShipment)
-            simulator.notifyShipmentCreated(newShipment)
-            return newShipment
         } else {
-            simulator.notifyShipmentNotFound(updateData.getShipmentId())
             throw IllegalStateException("Shipment not found: ${updateData.getShipmentId()}")
         }
     }
-    
+
     protected abstract fun processUpdate(shipment: Shipment, updateData: UpdateData)
-    
-    private fun createShippingUpdate(
-        shipment: Shipment, 
-        previousStatus: ShipmentStatus, 
+
+    protected fun createShippingUpdate(
+        shipment: Shipment,
+        previousStatus: ShipmentStatus,
         updateData: UpdateData
     ): ShippingUpdate {
         return ShippingUpdate(
             previousStatus = previousStatus.toString(),
-            newStatus = shipment.getStatus().toString(),
+            newStatus = shipment.status.toString(),
             timestamp = updateData.getTimestamp(),
-            location = shipment.getCurrentLocation(),
+            location = shipment.currentLocation?.toString(),
             notes = createUpdateNotes(updateData)
         )
     }
@@ -67,20 +63,27 @@ abstract class AbstractUpdateStrategy(private val updateType: String) : UpdateSt
             else -> null
         }
     }
-    
+
     private fun formatTimestamp(timestamp: Long): String {
         val instant = java.time.Instant.ofEpochMilli(timestamp)
         val dateTime = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault())
         return dateTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
     }
 
-
-    override fun validateUpdate(updateData: UpdateData) {
+    open fun validateUpdate(updateData: UpdateData): Boolean {
         if (updateData.getShipmentId().isBlank()) {
             throw IllegalArgumentException("Shipment ID cannot be blank")
         }
         if (updateData.getTimestamp() <= 0) {
             throw IllegalArgumentException("Invalid timestamp")
         }
+        return true
     }
+
+
+
+    // Helper methods for validation
+    protected fun validateTimestamp(timestamp: Long): Boolean = timestamp > 0
+
+    protected fun validateShipmentId(shipmentId: String): Boolean = shipmentId.isNotBlank()
 }

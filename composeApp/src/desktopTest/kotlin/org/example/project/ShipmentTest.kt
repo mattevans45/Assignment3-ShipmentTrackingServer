@@ -3,7 +3,6 @@ package org.example.project
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class ShipmentTest {
@@ -20,11 +19,11 @@ class ShipmentTest {
 
         // Assert
         assertEquals(id, shipment.getId())
-        assertEquals(status, shipment.getStatus())
-        assertEquals(createdTimestamp, shipment.getCreatedAt())
-        assertTrue(shipment.getUpdates().isEmpty())
-        assertTrue(shipment.getNotes().isEmpty())
-        assertNull(shipment.getCurrentLocation())
+        assertEquals(status, shipment.status)
+        assertEquals(createdTimestamp, shipment.createdTimestamp)
+        assertTrue(shipment.updateHistory.isEmpty())
+        assertTrue(shipment.notesList.isEmpty())
+        assertNull(shipment.currentLocation)
     }
 
     @Test
@@ -36,7 +35,7 @@ class ShipmentTest {
         shipment.updateStatus(ShipmentStatus.SHIPPED)
 
         // Assert
-        assertEquals(ShipmentStatus.SHIPPED, shipment.getStatus())
+        assertEquals(ShipmentStatus.SHIPPED, shipment.status)
     }
 
     @Test
@@ -45,10 +44,10 @@ class ShipmentTest {
         val shipment = Shipment("123", ShipmentStatus.CREATED, 1699123456789L)
 
         // Act
-        shipment.setCurrentLocation("New York")
+        shipment.updateCurrentLocation("New York")
 
         // Assert
-        assertEquals("New York", shipment.getCurrentLocation())
+        assertEquals("New York", shipment.currentLocation)
     }
 
     @Test
@@ -58,10 +57,10 @@ class ShipmentTest {
         val deliveryDate = 1699209856789L
 
         // Act
-        shipment.setExpectedDeliveryDate(deliveryDate)
+        shipment.updateExpectedDeliveryDateTimestamp(deliveryDate)
 
         // Assert
-        assertEquals(deliveryDate, shipment.getExpectedDeliveryDate())
+        assertEquals(deliveryDate, shipment.expectedDeliveryDateTimestamp)
     }
 
     @Test
@@ -74,8 +73,8 @@ class ShipmentTest {
         shipment.addUpdate(update)
 
         // Assert
-        assertEquals(1, shipment.getUpdates().size)
-        assertEquals(update, shipment.getUpdates()[0])
+        assertEquals(1, shipment.updateHistory.size)
+        assertEquals(update, shipment.updateHistory[0])
     }
 
     @Test
@@ -88,35 +87,16 @@ class ShipmentTest {
         shipment.addNote(note)
 
         // Assert
-        assertEquals(1, shipment.getNotes().size)
-        assertEquals(note, shipment.getNotes()[0])
+        assertEquals(1, shipment.notesList.size)
+        assertEquals(note, shipment.notesList[0])
     }
 
-    @Test
-    fun copyCreatesNewInstanceWithSameProperties() {
-        // Arrange
-        val originalShipment = Shipment("123", ShipmentStatus.CREATED, 1699123456789L)
-        originalShipment.updateStatus(ShipmentStatus.SHIPPED)
-        originalShipment.setCurrentLocation("New York")
-        originalShipment.addNote("Test note")
-
-        // Act
-        val copiedShipment = originalShipment.copy()
-
-        // Assert
-        assertEquals(originalShipment.getId(), copiedShipment.getId())
-        assertEquals(originalShipment.getStatus(), copiedShipment.getStatus())
-        assertEquals(originalShipment.getCreatedAt(), copiedShipment.getCreatedAt())
-        assertEquals(originalShipment.getCurrentLocation(), copiedShipment.getCurrentLocation())
-        assertEquals(originalShipment.getNotes(), copiedShipment.getNotes())
-        assertEquals(originalShipment.getUpdates(), copiedShipment.getUpdates())
-    }
 
     @Test
     fun getFormattedDeliveryDateReturnsFormattedDate() {
         // Arrange
         val shipment = Shipment("123", ShipmentStatus.CREATED, 1699123456789L)
-        shipment.setExpectedDeliveryDate(1699209856789L) // Nov 05, 2023
+        shipment.updateExpectedDeliveryDateTimestamp(1699209856789L) // Nov 05, 2023
 
         // Act
         val formattedDate = shipment.getFormattedDeliveryDate()

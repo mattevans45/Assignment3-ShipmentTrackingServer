@@ -20,7 +20,8 @@ class DelayedStrategyTest {
 
     @AfterTest
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
 
     @Test
@@ -35,7 +36,8 @@ class DelayedStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals(ShipmentStatus.DELAYED, shipment.status)
+        assertEquals(1000L, shipment.expectedDeliveryDateTimestamp)
     }
 
     @Test
@@ -50,7 +52,7 @@ class DelayedStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals(ShipmentStatus.DELIVERED, shipment.status)
     }
 
     @Test
@@ -65,6 +67,6 @@ class DelayedStrategyTest {
         }
 
         verify(mockSimulator).getShipment("123")
-        verify(mockSimulator).notifyShipmentNotFound("123")
+
     }
 }

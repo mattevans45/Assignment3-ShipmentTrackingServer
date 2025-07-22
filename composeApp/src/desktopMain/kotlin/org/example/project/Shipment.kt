@@ -1,53 +1,76 @@
 package org.example.project
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 class Shipment(
     private val id: String,
-    private var status: ShipmentStatus,
-    private val createdTimestamp: Long,
-    private var expectedDeliveryDateTimestamp: Long? = null,
-    private var currentLocation: String? = null,
-    private val notesList: MutableList<String> = mutableListOf()
-) {
-    private val updates: MutableList<ShippingUpdate> = mutableListOf()
+    status: ShipmentStatus,
+    createdTimestamp: Long,
+    expectedDeliveryDateTimestamp: Long? = null,
+    currentLocation: String? = null,
+    notesList: List<String> = emptyList()
+) : Subject {
+    private val observers: MutableList<Observer> = mutableListOf()
 
+
+    var status by mutableStateOf(status)
+        private set
+    var createdTimestamp by mutableStateOf(createdTimestamp)
+        private set
+    var expectedDeliveryDateTimestamp by mutableStateOf(expectedDeliveryDateTimestamp)
+        private set
+    var currentLocation by mutableStateOf(currentLocation)
+        private set
+    var notesList by mutableStateOf(notesList.toMutableList())
+        private set
+    var updateHistory by mutableStateOf(mutableListOf<ShippingUpdate>())
+        private set
+
+    // Subject interface implementation (unchanged)
+    override fun addObserver(observer: Observer) { observers.add(observer) }
+    override fun removeObserver(observer: Observer) { observers.remove(observer) }
+    override fun notifyObservers() {
+        observers.forEach { observer -> observer.onShipmentUpdated(this) }
+    }
+    override fun notifyShipmentCreated() {
+        observers.forEach { observer -> observer.onShipmentCreated(this) }
+    }
+    override fun notifyShipmentNotFound(shipmentId: String) {
+        observers.forEach { observer -> observer.onShipmentNotFound(shipmentId) }
+    }
 
     fun getId(): String = id
-    fun getStatus(): ShipmentStatus = status
-    fun getCreatedAt(): Long = createdTimestamp
-    fun getExpectedDeliveryDate(): Long? = expectedDeliveryDateTimestamp
-    fun getCurrentLocation(): String? = currentLocation
-    fun getNotes(): List<String> = notesList.toList()
-    fun getUpdates(): List<ShippingUpdate> = updates.toList()
 
     fun updateStatus(newStatus: ShipmentStatus) {
         if (status != newStatus) {
             status = newStatus
+            notifyObservers()
         }
     }
-
-    fun setExpectedDeliveryDate(date: Long) {
-        if (expectedDeliveryDateTimestamp != date) {
-            expectedDeliveryDateTimestamp = date
+    fun updateExpectedDeliveryDateTimestamp(timestamp: Long?) {
+        if (expectedDeliveryDateTimestamp != timestamp) {
+            expectedDeliveryDateTimestamp = timestamp
+            notifyObservers()
         }
     }
-
-    fun setCurrentLocation(location: String?) {
+    fun updateCurrentLocation(location: String?) {
         if (currentLocation != location) {
             currentLocation = location
+            notifyObservers()
         }
     }
-
     fun addNote(note: String) {
-        notesList.add(note)
+        notesList = (notesList + note) as MutableList<String>
+        notifyObservers()
     }
-
     fun addUpdate(update: ShippingUpdate) {
-        updates.add(update)
+        updateHistory = (updateHistory + update).toMutableList()
+        notifyObservers()
     }
 
     fun getFormattedDeliveryDate(): String {
@@ -59,38 +82,4 @@ class Shipment(
             instant.atZone(ZoneId.systemDefault()).format(formatter)
         }
     }
-
-    fun getFormattedUpdateHistory(): List<String> {
-        return updates.map { update ->
-            "${formatTimestamp(update.getTimestamp())}: ${update.getPreviousStatus()} → ${update.getNewStatus()}"
-        }
-    }
-    
-    private fun formatTimestamp(timestamp: Long): String {
-        val instant = Instant.ofEpochMilli(timestamp)
-        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-        return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-    }
-
-    // Add this method to your Shipment class
-    fun copy(): Shipment {
-        val newShipment = Shipment(
-            id = this.id,
-            status = this.status,
-            createdTimestamp = this.createdTimestamp,
-            expectedDeliveryDateTimestamp = this.expectedDeliveryDateTimestamp
-        )
-        
-        // Copy current location
-        newShipment.setCurrentLocation(this.getCurrentLocation())
-        
-        // Copy all notes
-        this.getNotes().forEach { newShipment.addNote(it) }
-        
-        // Copy all updates
-        this.getUpdates().forEach { newShipment.addUpdate(it) }
-        
-        return newShipment
-    }
-
 }

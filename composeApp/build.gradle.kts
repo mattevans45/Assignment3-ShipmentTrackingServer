@@ -25,6 +25,10 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("io.ktor:ktor-server-core:2.3.7")
+            implementation("io.ktor:ktor-server-netty:2.3.7")
+            implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
         }
 
         commonTest.dependencies {
@@ -37,16 +41,27 @@ kotlin {
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("io.ktor:ktor-server-core-jvm:${ktorVersion}")
+            implementation("io.ktor:ktor-server-netty-jvm:${ktorVersion}")
+            implementation("io.ktor:ktor-server-content-negotiation-jvm:${ktorVersion}")
+            implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:${ktorVersion}")
+
         }
 
         desktopTest.dependencies {
             implementation("org.junit.jupiter:junit-jupiter:5.9.3")
             implementation("org.mockito:mockito-core:5.3.1")
             implementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
+            implementation("io.ktor:ktor-server-tests-jvm:${ktorVersion}")
         }
     }
 }
 
+val ktorVersion = "3.2.2"
+
+dependencies {
+
+}
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging {

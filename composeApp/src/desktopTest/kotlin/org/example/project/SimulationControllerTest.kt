@@ -31,12 +31,13 @@ class SimulationControllerTest {
         setPrivateField(simulationController, "fileProcessor", mockFileProcessor)
         setPrivateField(simulationController, "updateProcessor", mockUpdateProcessor)
     }
-    
+
     @AfterTest
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
-    
+
     @Test
     fun startSimulationReturnsFalseWhenAlreadyRunning() {
         // Arrange

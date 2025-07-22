@@ -8,7 +8,7 @@ import org.mockito.kotlin.*
 class UpdateProcessorTest {
     private lateinit var updateProcessor: UpdateProcessor
     private lateinit var mockStrategyFactory: UpdateStrategyFactory
-    private lateinit var mockStrategy: UpdateStrategy
+    private lateinit var mockStrategy: AbstractUpdateStrategy
     
     @BeforeTest
     fun setUp() {

@@ -20,7 +20,8 @@ class NoteAddedStrategyTest {
 
     @AfterTest
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
 
     @Test
@@ -35,7 +36,7 @@ class NoteAddedStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals("Package delayed due to weather", shipment.notesList.lastOrNull())
     }
 
     @Test
@@ -50,6 +51,6 @@ class NoteAddedStrategyTest {
         }
 
         verify(mockSimulator).getShipment("123")
-        verify(mockSimulator).notifyShipmentNotFound("123")
+        verify(mockSimulator, never()).updateShipment(any())
     }
 }

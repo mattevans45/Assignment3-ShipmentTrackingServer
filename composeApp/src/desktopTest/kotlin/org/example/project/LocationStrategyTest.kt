@@ -20,7 +20,8 @@ class LocationStrategyTest {
 
     @AfterTest
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
 
     @Test
@@ -35,7 +36,7 @@ class LocationStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals("New York", shipment.currentLocation)
     }
 
     @Test
@@ -50,6 +51,6 @@ class LocationStrategyTest {
         }
 
         verify(mockSimulator).getShipment("123")
-        verify(mockSimulator).notifyShipmentNotFound("123")
+
     }
 }

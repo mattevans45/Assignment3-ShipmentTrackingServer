@@ -24,43 +24,39 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import javax.annotation.processing.Generated
 
-
-@Generated
 @Composable
 @Preview
 fun App() {
     MaterialTheme { ShipmentTrackingApp() }
 }
 
-@Generated
 data class ToastMessage(
     val message: String,
     val isError: Boolean,
     val id: Long = System.currentTimeMillis()
 )
-@Generated
+
 @Composable
 fun ShipmentTrackingApp() {
-    val simulator = remember { TrackingSimulator.getInstance() }
+    val simulator = remember { TrackingSimulator }
     val viewHelper = remember { TrackerViewHelper() }
     val simulationController = remember { SimulationController() }
     val scope = rememberCoroutineScope()
-    
+
     // Simple state variables
     var isSimulationRunning by remember { mutableStateOf(false) }
     var simulationJob by remember { mutableStateOf<Job?>(null) }
     var shipmentId by remember { mutableStateOf("") }
-    
+
     // Toast system
     val toastMessages = remember { mutableStateListOf<ToastMessage>() }
-    
+
     // Function to show a toast
     fun showToast(message: String, isError: Boolean) {
         val newToast = ToastMessage(message, isError)
         toastMessages.add(newToast)
-        
+
         // Auto-dismiss after 3 seconds
         scope.launch {
             delay(3000)
@@ -68,24 +64,12 @@ fun ShipmentTrackingApp() {
         }
     }
 
-    LaunchedEffect(Unit) {
-        simulator.addObserver(viewHelper)
-        println("DEBUG: App - Observer registered")
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            simulator.removeObserver(viewHelper)
-            println("DEBUG: App - Observer removed")
-        }
-    }
-
     fun startSimulation() {
         if (isSimulationRunning) return
-        
+
         try {
             val fileName = "test.txt"
-            
+
             if (simulationController.loadFile(fileName) && simulationController.startSimulation()) {
                 isSimulationRunning = true
                 showToast("Simulation started successfully", false)
@@ -93,13 +77,13 @@ fun ShipmentTrackingApp() {
                 simulationJob = scope.launch {
                     while (isSimulationRunning && simulationController.hasMoreUpdates()) {
                         val hasMore = simulationController.processNextUpdate()
-                        
+
                         if (!hasMore) {
                             isSimulationRunning = false
                             showToast("Simulation completed - all updates processed", false)
                             break
                         }
-                        
+
                         delay(1000)
                     }
                 }
@@ -116,11 +100,11 @@ fun ShipmentTrackingApp() {
             simulationJob?.cancel()
             simulationJob = null
             simulationController.stopSimulation()
-            
+
             // Clear all data
             simulator.clearAllShipments()
             viewHelper.resetSimulation()
-            
+
             isSimulationRunning = false
             showToast("Simulation stopped and reset", false)
         } catch (e: Exception) {
@@ -135,7 +119,7 @@ fun ShipmentTrackingApp() {
         }
         try {
             val existingShipment = simulator.getShipment(shipmentId)
-            
+
             if (existingShipment != null) {
                 viewHelper.trackShipment(shipmentId)
                 showToast("Started tracking shipment: $shipmentId", false)
@@ -195,7 +179,7 @@ fun ShipmentTrackingApp() {
         ToastOverlay(toastMessages = toastMessages)
     }
 }
-@Generated
+
 @Composable
 fun ToastOverlay(toastMessages: List<ToastMessage>) {
     Box(
@@ -216,18 +200,17 @@ fun ToastOverlay(toastMessages: List<ToastMessage>) {
     }
 }
 
-@Generated
 @Composable
 fun ToastMessageDisplay(message: String, isError: Boolean) {
     val backgroundColor = if (isError) Color(0xFFFFEBEE) else Color(0xFFE8F5E8)
     val textColor = if (isError) Color(0xFFD32F2F) else Color(0xFF388E3C)
 
     var isVisible by remember { mutableStateOf(false) }
-    
+
     LaunchedEffect(Unit) {
         isVisible = true
     }
-    
+
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn() + slideInVertically(initialOffsetY = { -40 }),
@@ -237,7 +220,7 @@ fun ToastMessageDisplay(message: String, isError: Boolean) {
             modifier = Modifier
                 .padding(8.dp)
                 .shadow(4.dp, RoundedCornerShape(8.dp))
-                .widthIn(max = 400.dp), // Wider toast for better readability
+                .widthIn(max = 400.dp),
             colors = CardDefaults.cardColors(containerColor = backgroundColor),
             shape = RoundedCornerShape(8.dp)
         ) {
@@ -319,7 +302,6 @@ fun SimulationPanel(
     }
 }
 
-@Generated
 @Composable
 fun TrackingInput(
     shipmentId: String,
@@ -373,14 +355,14 @@ fun TrackingInput(
     }
 }
 
-@Generated
 @Composable
 fun ShipmentDisplay(
     viewHelper: TrackerViewHelper,
     onStopTracking: (String) -> Unit
 ) {
-    val trackedShipments by viewHelper.trackedShipmentData
-    
+    // Fixed: Access the Map directly, not as a State
+    val trackedShipments = viewHelper.trackedShipmentData
+
     if (trackedShipments.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
@@ -389,10 +371,10 @@ fun ShipmentDisplay(
         ) {
             items(
                 items = trackedShipments.values.toList(),
-                key = { shipment -> 
-                    "${shipment.getId()}_${shipment.getUpdates().size}_${shipment.getStatus()}"
-                }
-            ) { shipment ->
+            key = { shipment -> 
+                "${shipment.getId()}_${shipment.updateHistory.size}_${shipment.status}"
+            }
+            ) { shipment: Shipment ->
                 ShipmentCard(
                     shipment = shipment,
                     onStopTracking = { onStopTracking(shipment.getId()) }
@@ -421,7 +403,6 @@ fun ShipmentDisplay(
     }
 }
 
-@Generated
 @Composable
 fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
     Card(
@@ -456,6 +437,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                     )
                 }
             }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -469,7 +451,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
 
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = when (shipment.getStatus()) {
+                        containerColor = when (shipment.status) {
                             ShipmentStatus.DELIVERED -> Color(0xFF4CAF50)
                             ShipmentStatus.LOST, ShipmentStatus.CANCELED -> Color(0xFFF44336)
                             ShipmentStatus.DELAYED -> Color(0xFFFF9800)
@@ -480,11 +462,11 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = shipment.getStatus().toString(),
+                        text = shipment.status.toString(),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
-                        modifier = Modifier.padding(horizontal = 12.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -498,8 +480,8 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
-                val location = shipment.getCurrentLocation()
+
+                val location = shipment.currentLocation
                 Text(
                     text = if (location.isNullOrEmpty()) "Unknown" else location,
                     fontWeight = FontWeight.Medium,
@@ -510,6 +492,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                     }
                 )
             }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -519,9 +502,9 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 val deliveryText = shipment.getFormattedDeliveryDate()
-                
+
                 Text(
                     text = deliveryText,
                     fontWeight = FontWeight.Medium,
@@ -533,11 +516,13 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                 )
             }
 
-            val statusUpdates = shipment.getUpdates().filter { update ->
+            // Fixed: Changed getUpdates() to updateHistory
+            val statusUpdates = shipment.updateHistory.filter { update ->
                 !update.getPreviousStatus().equals(update.getNewStatus(), ignoreCase = true)
             }
-            val notes = shipment.getNotes()
-            
+
+            val notes = shipment.notesList
+
             if (statusUpdates.isNotEmpty() || notes.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -562,7 +547,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
 
-                                statusUpdates.forEach { update ->
+                                statusUpdates.forEach { update: ShippingUpdate ->
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = CardDefaults.cardColors(
@@ -581,7 +566,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
 
-                                            update.getNotes()?.let { updateNotes ->
+                                            update.getNotes()?.let { updateNotes: String ->
                                                 if (updateNotes.isNotEmpty()) {
                                                     Text(
                                                         text = "ℹ️ $updateNotes",
@@ -604,6 +589,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                             }
                         }
                     }
+
                     if (notes.isNotEmpty()) {
                         Card(
                             modifier = Modifier.weight(if (statusUpdates.isEmpty()) 1f else 0.4f),
@@ -623,7 +609,7 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
 
-                                notes.filter { it.isNotBlank() }.forEach { note ->
+                                notes.filter { it.isNotBlank() }.forEach { note: String ->
                                     Text(
                                         text = "• $note",
                                         color = MaterialTheme.colorScheme.onSurface,
@@ -639,4 +625,3 @@ fun ShipmentCard(shipment: Shipment, onStopTracking: () -> Unit) {
         }
     }
 }
-

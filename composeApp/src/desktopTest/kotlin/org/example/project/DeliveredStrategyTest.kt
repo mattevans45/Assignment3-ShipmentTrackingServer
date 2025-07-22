@@ -20,7 +20,8 @@ class DeliveredStrategyTest {
 
     @AfterTest
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
 
     @Test
@@ -35,7 +36,7 @@ class DeliveredStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals(ShipmentStatus.DELIVERED, shipment.status)
     }
 
     @Test
@@ -50,7 +51,7 @@ class DeliveredStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals(ShipmentStatus.CANCELED, shipment.status)
     }
 
     @Test
@@ -65,6 +66,6 @@ class DeliveredStrategyTest {
         }
 
         verify(mockSimulator).getShipment("123")
-        verify(mockSimulator).notifyShipmentNotFound("123")
+
     }
 }

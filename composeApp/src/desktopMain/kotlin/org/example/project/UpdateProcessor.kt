@@ -25,13 +25,4 @@ class UpdateProcessor {
             otherInfo = if (parts.size > 3) parts[3].trim() else null
         )
     }
-    
-    private fun validateUpdateData(updateData: UpdateData) {
-        if (updateData.getShipmentId().isBlank()) {
-            throw IllegalArgumentException("Shipment ID cannot be blank")
-        }
-        if (updateData.getTimestamp() <= 0) {
-            throw IllegalArgumentException("Invalid timestamp")
-        }
-    }
 }

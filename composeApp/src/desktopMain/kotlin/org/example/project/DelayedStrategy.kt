@@ -1,27 +1,36 @@
 package org.example.project
 
 class DelayedStrategy : AbstractUpdateStrategy("DELAYED") {
+    
     override fun processUpdate(shipment: Shipment, updateData: UpdateData) {
+        // Do not delay if already delivered
+        if (shipment.status == ShipmentStatus.DELIVERED) return
+
         shipment.updateStatus(ShipmentStatus.DELAYED)
-        val newDeliveryTimestamp = updateData.getOtherInfo()
-
-        if (!newDeliveryTimestamp.isNullOrEmpty()) {
-            try {
-                val deliveryDate = newDeliveryTimestamp.toLong()
-                shipment.setExpectedDeliveryDate(deliveryDate)
-
-            } catch (e: NumberFormatException) {
-                println("ERROR: DelayedStrategy - Invalid delivery date format: $newDeliveryTimestamp")
-                shipment.addNote("Shipment delayed. Invalid delivery date provided: $newDeliveryTimestamp")
-            }
-        } else {
-            shipment.addNote("Shipment delayed. No new delivery date specified.")
+        
+        // Parse the new delivery date from otherInfo
+        updateData.getOtherInfo()?.let { otherInfo ->
+            val newDeliveryDate = parseNewDeliveryDate(otherInfo)
+            shipment.updateExpectedDeliveryDateTimestamp(newDeliveryDate)
         }
     }
-
-    override fun validateUpdate(updateData: UpdateData) {
+    
+    override fun validateUpdate(updateData: UpdateData): Boolean {
+        super.validateUpdate(updateData)
+        
+        // Validate that we have delivery date info
         if (updateData.getOtherInfo().isNullOrBlank()) {
-            throw IllegalArgumentException("Delayed update requires non-empty otherInfo for expected delivery date")
+            throw IllegalArgumentException("Delayed update must include new delivery date")
+        }
+        
+        return true
+    }
+    
+    private fun parseNewDeliveryDate(otherInfo: String): Long {
+        return try {
+            otherInfo.toLong()
+        } catch (e: NumberFormatException) {
+            throw IllegalArgumentException("Invalid delivery date format: $otherInfo")
         }
     }
 }

@@ -5,7 +5,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.mockito.kotlin.*
-import kotlin.test.assertFailsWith
 
 class CanceledStrategyTest {
     private lateinit var strategy: CanceledStrategy
@@ -20,7 +19,8 @@ class CanceledStrategyTest {
 
     @AfterTest
     fun tearDown() {
-        TrackingSimulator.resetInstance()
+        TrackingSimulator.setTestInstance(null)
+        TrackingSimulator.clearAllShipments()
     }
 
     @Test
@@ -36,7 +36,7 @@ class CanceledStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals(ShipmentStatus.CANCELED, shipment.status)
     }
 
     @Test
@@ -52,7 +52,6 @@ class CanceledStrategyTest {
 
         // Assert
         verify(mockSimulator).updateShipment(any())
-        verify(mockSimulator).notifyObservers(any())
+        assertEquals(ShipmentStatus.DELIVERED, shipment.status)
     }
-
 }
