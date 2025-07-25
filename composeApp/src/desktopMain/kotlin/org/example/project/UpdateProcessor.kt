@@ -1,28 +1,20 @@
 package org.example.project
 
 class UpdateProcessor {
-    private val strategyFactory: UpdateStrategyFactory = UpdateStrategyFactory()
 
-    fun processUpdate(updateLine: String) {
+    fun process(payload: ShipmentUpdatePayload) {
         try {
-            val updateData = parseUpdateLine(updateLine)
-
-            val strategy = strategyFactory.createStrategy(updateData.getUpdateType())
-
-            strategy.execute(updateData)
-            
+            val updateData = UpdateData(
+                payload.updateType,
+                payload.shipmentId,
+                payload.timestamp,
+                payload.otherInfo
+            )
+            UpdateStrategyFactory.create(updateData.getUpdateType())?.execute(updateData)
+                ?: println("Warning: No strategy for '${updateData.getUpdateType()}'")
         } catch (e: Exception) {
-            println("ERROR: UpdateProcessor - Failed to process update: ${e.message}")
+            println("ERROR: UpdateProcessor failed: ${e.message}")
         }
     }
-    
-    private fun parseUpdateLine(line: String): UpdateData {
-        val parts = line.split(",")
-        return UpdateData(
-            updateType = parts[0].trim(),
-            shipmentId = parts[1].trim(),
-            timestamp = parts[2].trim().toLong(),
-            otherInfo = if (parts.size > 3) parts[3].trim() else null
-        )
-    }
+
 }

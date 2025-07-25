@@ -1,32 +1,14 @@
 package org.example.project
 
-class CreatedStrategy : AbstractUpdateStrategy("CREATED") {
-    
-    override fun processUpdate(shipment: Shipment, updateData: UpdateData) {
-        // For CREATED updates, the shipment should already have the CREATED status
-        // We might need to set initial values or just confirm the status
-        shipment.updateStatus(ShipmentStatus.CREATED)
-        
-        // Set expected delivery date if provided in otherInfo
-        updateData.getOtherInfo()?.let { otherInfo ->
-            try {
-                val timestamp = otherInfo.toLong()
-                shipment.updateExpectedDeliveryDateTimestamp(timestamp)
-            } catch (e: NumberFormatException) {
-                // If otherInfo is not a valid timestamp, ignore it for CREATED updates
-                println("DEBUG: CreatedStrategy - Invalid timestamp in otherInfo: $otherInfo")
-            }
+class CreatedStrategy : AbstractUpdateStrategy() {
+    override fun processUpdate(shipment: Shipment?, updateData: UpdateData) {
+        if (shipment != null) {
+            println("Shipment ${updateData.getShipmentId()} already exists.")
+            return
         }
-    }
-    
-    override fun validateUpdate(updateData: UpdateData): Boolean {
-        super.validateUpdate(updateData)
-        
-        // Additional validation for CREATED updates
-        if (updateData.getUpdateType() != "CREATED") {
-            throw IllegalArgumentException("Invalid update type for CreatedStrategy: ${updateData.getUpdateType()}")
-        }
-        
-        return true
+        val type = try { ShipmentType.valueOf(updateData.getOtherInfo()?.uppercase() ?: "STANDARD") } catch (e: Exception) { ShipmentType.STANDARD }
+        val newShipment = ShipmentFactory.create(type, updateData.getShipmentId(), ShipmentStatus.CREATED, updateData.getTimestamp(), null)
+        TrackingServer.addShipment(newShipment)
+        println("Created ${type.name.lowercase()} shipment: ${updateData.getShipmentId()}")
     }
 }

@@ -1,5 +1,6 @@
 package org.example.project
 
+
 class UpdateData(
     private val updateType: String,
     private val shipmentId: String,
@@ -10,14 +11,6 @@ class UpdateData(
     fun getShipmentId(): String = shipmentId
     fun getTimestamp(): Long = timestamp
     fun getOtherInfo(): String? = otherInfo
-
-    fun isValid(): Boolean {
-        return updateType.isNotBlank() &&
-                shipmentId.isNotBlank() &&
-                timestamp > 0
-    }
-    
-    override fun toString(): String {
-        return "UpdateData(type=$updateType, shipmentId=$shipmentId, timestamp=$timestamp, otherInfo=$otherInfo)"
-    }
+    fun isValid(): Boolean = updateType.isNotBlank() && shipmentId.isNotBlank() && timestamp > 0
+    override fun toString(): String = "UpdateData(type=$updateType, shipmentId=$shipmentId, timestamp=$timestamp, otherInfo=$otherInfo)"
 }

@@ -9,7 +9,7 @@ import org.mockito.kotlin.*
 
 class AbstractUpdateStrategyTest {
     private lateinit var strategy: TestUpdateStrategy
-    private lateinit var mockSimulator: TrackingSimulator
+    private lateinit var mockSimulator: TrackingServer
 
     @BeforeTest
     fun setUp() {

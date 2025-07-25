@@ -1,4 +1,4 @@
-rootProject.name = "Assn2-ShipmentTrackingSimulator"
+rootProject.name = "Assn3-ShipmentTrackingSimulator"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

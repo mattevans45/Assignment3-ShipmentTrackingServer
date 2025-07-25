@@ -1,106 +1,62 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
-    jacoco
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 kotlin {
     jvm("desktop")
 
     sourceSets {
-        val desktopMain by getting
-        val desktopTest by getting
-
-        commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodel)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("io.ktor:ktor-server-core:2.3.7")
-            implementation("io.ktor:ktor-server-netty:2.3.7")
-            implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+        val commonMain by getting {
+            dependencies {
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.materialIconsExtended)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(compose.components.uiToolingPreview)
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            }
         }
 
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-            implementation("org.junit.jupiter:junit-jupiter:5.9.3")
-            implementation("org.mockito:mockito-core:5.3.1")
-            implementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
+        val desktopMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                implementation(libs.kotlinx.coroutinesSwing)
+
+                // --- Ktor Server Dependencies ---
+                implementation("io.ktor:ktor-server-core:2.3.7")
+                implementation("io.ktor:ktor-server-netty:2.3.7")
+                implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+
+                // FIX: Added the missing dependency for the WebSockets plugin.
+                implementation("io.ktor:ktor-server-websockets:2.3.7")
+
+                // --- Ktor Client Dependencies ---
+                implementation("io.ktor:ktor-client-core:2.3.7")
+                implementation("io.ktor:ktor-client-cio:2.3.7")
+                implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
+                implementation("io.ktor:ktor-client-okhttp:2.3.7")
+            }
         }
 
-        desktopMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
-            implementation("io.ktor:ktor-server-core-jvm:${ktorVersion}")
-            implementation("io.ktor:ktor-server-netty-jvm:${ktorVersion}")
-            implementation("io.ktor:ktor-server-content-negotiation-jvm:${ktorVersion}")
-            implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:${ktorVersion}")
-
-        }
-
-        desktopTest.dependencies {
-            implementation("org.junit.jupiter:junit-jupiter:5.9.3")
-            implementation("org.mockito:mockito-core:5.3.1")
-            implementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
-            implementation("io.ktor:ktor-server-tests-jvm:${ktorVersion}")
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.junit.jupiter:junit-jupiter:5.9.3")
+                implementation("org.mockito:mockito-core:5.3.1")
+                implementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
+                implementation("io.ktor:ktor-server-tests-jvm:2.3.7")
+            }
         }
     }
-}
-
-val ktorVersion = "3.2.2"
-
-dependencies {
-
-}
-tasks.withType<Test> {
-    useJUnitPlatform()
-    testLogging {
-        events("passed", "skipped", "failed")
-        showStandardStreams = true
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
-    }
-}
-
-// Create JaCoCo tasks for the desktop target
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("desktopTest")
-
-    executionData(fileTree(layout.buildDirectory.dir("jacoco")).include("**/*.exec"))
-
-    classDirectories.setFrom(
-        fileTree(layout.buildDirectory.dir("classes/kotlin/desktop/main")) {
-            exclude("**/App*")
-            exclude("**/ToastMessage*")
-            exclude("**/*\$Generated*")
-            exclude("**/javax/annotation/processing/Generated*")
-            exclude("**/*\$WhenMappings.*")
-        }
-    )
-
-    sourceDirectories.setFrom(files("src/desktopMain/kotlin"))
-
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/test/html"))
-        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml"))
-    }
-}
-
-tasks.named("desktopTest") {
-    finalizedBy("jacocoTestReport")
 }
 
 compose.desktop {
@@ -111,6 +67,25 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "org.example.project"
             packageVersion = "1.0.0"
+        }
+    }
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("runServer") {
+    group = "application"
+    description = "Run Ktor server"
+    classpath = sourceSets["desktopMain"].runtimeClasspath
+    mainClass.set("org.example.project.ServerMainKt") // Ensure you have a ServerMain.kt file
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlinx" && requested.name.startsWith("kotlinx-coroutines")) {
+            useVersion("1.7.3")
         }
     }
 }

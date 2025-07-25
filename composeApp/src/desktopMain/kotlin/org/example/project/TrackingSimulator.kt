@@ -1,43 +1,34 @@
 package org.example.project
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
-object TrackingSimulator {
 
-    private val shipments: MutableMap<String, Shipment> = ConcurrentHashMap()
 
-    fun addShipment(shipment: Shipment) {
-        shipments[shipment.getId()] = shipment
+object TrackingServer {
+    private val shipments = ConcurrentHashMap<String, Shipment>()
+    lateinit var coroutineScope: CoroutineScope
+
+    fun initialize(scope: CoroutineScope) {
+        coroutineScope = scope
     }
-
+    fun getAllShipments(): List<Shipment> = shipments.values.toList()
     fun getShipment(id: String): Shipment? = shipments[id]
-
-    fun updateShipment(shipment: Shipment) {
-        shipments[shipment.getId()] = shipment
-    }
-
-    fun clearAllShipments() {
-        synchronized(shipments) {
-            println("DEBUG: Clearing all shipments")
-            val clearedCount = shipments.size
-            shipments.clear()
-            println("DEBUG: Cleared $clearedCount shipments")
+    fun addShipment(shipment: Shipment) {
+        shipments[shipment.id] = shipment
+        shipment.notifyShipmentCreated()
+        coroutineScope.launch {
+            ConnectionManager.notifyShipmentUpdated(shipment)
         }
     }
-
-    fun getAllShipments(): Map<String, Shipment> = shipments.toMap()
-
-    @JvmStatic
-    fun resetForTesting() {
-        clearAllShipments()
+    fun updateShipment(shipment: Shipment) {
+        shipments[shipment.id] = shipment
+        coroutineScope.launch {
+            ConnectionManager.notifyShipmentUpdated(shipment)
+        }
     }
-
-    @Volatile
-    private var testInstance: TrackingSimulator? = null
-
-    fun setTestInstance(instance: TrackingSimulator?) {
-        testInstance = instance
-    }
-
-    fun getInstance(): TrackingSimulator = testInstance ?: this
+    fun remove(id: String): Boolean = shipments.remove(id) != null
+    fun clearAllShipments() = shipments.clear()
 }

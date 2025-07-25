@@ -6,7 +6,7 @@ class SimulationController(
 
 
 ) {
-    private val simulator: TrackingSimulator get() = TrackingSimulator.getInstance()
+    private val simulator: TrackingServer get() = TrackingServer
     private var isRunning: Boolean = false
 
     fun startSimulation(): Boolean {
@@ -21,7 +21,7 @@ class SimulationController(
         }
 
         try {
-            simulator.clearAllShipments()
+
 
             isRunning = true
             println("DEBUG: Simulation started with ${fileProcessor.getTotalUpdates()} updates")
@@ -43,25 +43,25 @@ class SimulationController(
 
     fun isSimulationRunning(): Boolean = isRunning
 
-    fun processNextUpdate(): Boolean {
-        if (!isSimulationRunning()) return false
+    // fun processNextUpdate(): Boolean {
+    //     if (!isSimulationRunning()) return false
 
-        try {
-            val nextUpdate = fileProcessor.getNextUpdate()
+    //     try {
+    //         val nextUpdate = fileProcessor.getNextUpdate()
 
-            if (nextUpdate == null) {
-                println("DEBUG: No more updates to process - simulation complete")
-                stopSimulation()
-                return false
-            }
+    //         if (nextUpdate == null) {
+    //             println("DEBUG: No more updates to process - simulation complete")
+    //             stopSimulation()
+    //             return false
+    //         }
 
-            updateProcessor.processUpdate(nextUpdate)
-            return true
-        } catch (e: Exception) {
-            println("ERROR: Failed to process update: ${e.message}")
-            return fileProcessor.hasMoreUpdates()
-        }
-    }
+    //         updateProcessor.processUpdate(nextUpdate)
+    //         return true
+    //     } catch (e: Exception) {
+    //         println("ERROR: Failed to process update: ${e.message}")
+    //         return fileProcessor.hasMoreUpdates()
+    //     }
+    // }
 
     fun loadFile(fileName: String): Boolean {
         return try {
@@ -95,7 +95,7 @@ class SimulationController(
 
     fun resetSimulation() {
         stopSimulation()
-        simulator.clearAllShipments()
+
         fileProcessor.reset()
         println("DEBUG: Simulation controller reset")
     }

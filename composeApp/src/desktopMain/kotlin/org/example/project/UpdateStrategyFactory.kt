@@ -1,17 +1,15 @@
 package org.example.project
 
-class UpdateStrategyFactory {
-    fun createStrategy(updateType: String): AbstractUpdateStrategy {
-        return when (updateType.uppercase()) {
-            "CREATED" -> CreatedStrategy()
-            "SHIPPED" -> ShippedStrategy()
-            "LOCATION" -> LocationStrategy()
-            "DELAYED" -> DelayedStrategy()
-            "DELIVERED" -> DeliveredStrategy()
-            "CANCELED" -> CanceledStrategy()
-            "LOST" -> LostStrategy()
-            "NOTEADDED" -> NoteAddedStrategy()
-            else -> throw IllegalArgumentException("Unknown update type: $updateType")
-        }
-    }
+object UpdateStrategyFactory {
+    private val strategies = mapOf<String, AbstractUpdateStrategy>(
+        "CREATED" to CreatedStrategy(),
+        "SHIPPED" to ShippedStrategy(),
+        "LOCATION" to LocationStrategy(),
+        "DELIVERED" to DeliveredStrategy(),
+        "DELAYED" to DelayedStrategy(),
+        "CANCELED" to CanceledStrategy(),
+        "LOST" to LostStrategy(),
+        "NOTEADDED" to NoteAddedStrategy()
+    )
+    fun create(updateType: String): AbstractUpdateStrategy? = strategies[updateType.uppercase()]
 }

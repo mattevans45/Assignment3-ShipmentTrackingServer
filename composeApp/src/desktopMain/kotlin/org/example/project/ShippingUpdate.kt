@@ -1,25 +1,25 @@
 package org.example.project
 
+import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class ShippingUpdate(
-    private val previousStatus: String,
-    private val newStatus: String,
-    private val timestamp: Long,
-    private val location: String? = null,
-    private val notes: String? = null
+@Serializable
+data class ShippingUpdate(
+    val previousStatus: String = "",
+    val newStatus: String = "",
+    val timestamp: Long = 0L,
+    val location: String? = null,
+    val notes: String? = null
 ) {
-    fun getPreviousStatus(): String = previousStatus
-    fun getNewStatus(): String = newStatus
-    fun getTimestamp(): Long = timestamp
-    fun getLocation(): String? = location
-    fun getNotes(): String? = notes
-
     fun getFormattedTimestamp(): String {
-        val instant = Instant.ofEpochMilli(timestamp)
-        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm")
-        return instant.atZone(ZoneId.systemDefault()).format(formatter)
+        return Instant.ofEpochMilli(timestamp)
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    }
+
+    override fun toString(): String {
+        return "ShippingUpdate(previousStatus='$previousStatus', newStatus='$newStatus', timestamp=$timestamp, location=$location, notes=$notes)"
     }
 }
