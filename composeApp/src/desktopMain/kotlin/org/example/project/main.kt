@@ -2,11 +2,13 @@ package org.example.project
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import org.example.project.client.SimpleTrackingApp
 import org.example.project.client.TrackingClientApp
-import javax.annotation.processing.Generated
+import org.example.project.server.startServer
 
-@Generated("org.example.project.MainKt")
+
 fun main() = application {
+    startServer()
     Window(
         onCloseRequest = ::exitApplication,
         title = "Assn3-ShipmentTrackingSimulator",

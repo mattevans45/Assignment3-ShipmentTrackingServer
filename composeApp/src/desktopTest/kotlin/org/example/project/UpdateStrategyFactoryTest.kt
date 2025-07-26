@@ -1,136 +1,78 @@
 package org.example.project
 
+import org.example.project.strategy.UpdateStrategyFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class UpdateStrategyFactoryTest {
 
     @Test
-    fun createStrategyReturnsCreatedStrategyForCreatedType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("CREATED")
-
-        // Assert
+    fun createReturnsCreatedStrategyForCreatedType() {
+        val strategy = UpdateStrategyFactory.create("CREATED")
         assertNotNull(strategy)
         assertEquals("CreatedStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsCanceledStrategyForCanceledType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("CANCELED")
-
-        // Assert
+    fun createReturnsCanceledStrategyForCanceledType() {
+        val strategy = UpdateStrategyFactory.create("CANCELED")
         assertNotNull(strategy)
         assertEquals("CanceledStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsShippedStrategyForShippedType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("SHIPPED")
-
-        // Assert
+    fun createReturnsShippedStrategyForShippedType() {
+        val strategy = UpdateStrategyFactory.create("SHIPPED")
         assertNotNull(strategy)
         assertEquals("ShippedStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsLocationStrategyForLocationType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("LOCATION")
-
-        // Assert
+    fun createReturnsLocationStrategyForLocationType() {
+        val strategy = UpdateStrategyFactory.create("LOCATION")
         assertNotNull(strategy)
         assertEquals("LocationStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsDelayedStrategyForDelayedType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("DELAYED")
-
-        // Assert
+    fun createReturnsDelayedStrategyForDelayedType() {
+        val strategy = UpdateStrategyFactory.create("DELAYED")
         assertNotNull(strategy)
         assertEquals("DelayedStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsDeliveredStrategyForDeliveredType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("DELIVERED")
-
-        // Assert
+    fun createReturnsDeliveredStrategyForDeliveredType() {
+        val strategy = UpdateStrategyFactory.create("DELIVERED")
         assertNotNull(strategy)
         assertEquals("DeliveredStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsLostStrategyForLostType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("LOST")
-
-        // Assert
+    fun createReturnsLostStrategyForLostType() {
+        val strategy = UpdateStrategyFactory.create("LOST")
         assertNotNull(strategy)
         assertEquals("LostStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyReturnsNoteAddedStrategyForNoteAddedType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("NOTEADDED")
-
-        // Assert
+    fun createReturnsNoteAddedStrategyForNoteAddedType() {
+        val strategy = UpdateStrategyFactory.create("NOTEADDED")
         assertNotNull(strategy)
         assertEquals("NoteAddedStrategy", strategy::class.simpleName)
     }
 
     @Test
-    fun createStrategyThrowsExceptionForUnknownType() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act & Assert
-        assertFailsWith<IllegalArgumentException> {
-            factory.createStrategy("UNKNOWN")
-        }
+    fun createReturnsNullForUnknownType() {
+        val strategy = UpdateStrategyFactory.create("UNKNOWN")
+        assertNull(strategy)
     }
 
     @Test
-    fun createStrategyHandlesCaseInsensitiveInput() {
-        // Arrange
-        val factory = UpdateStrategyFactory()
-
-        // Act
-        val strategy = factory.createStrategy("created")
-
-        // Assert
+    fun createHandlesCaseInsensitiveInput() {
+        val strategy = UpdateStrategyFactory.create("created")
         assertNotNull(strategy)
         assertEquals("CreatedStrategy", strategy::class.simpleName)
     }

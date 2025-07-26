@@ -54,6 +54,8 @@ kotlin {
                 implementation("org.mockito:mockito-core:5.3.1")
                 implementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
                 implementation("io.ktor:ktor-server-tests-jvm:2.3.7")
+                implementation("io.ktor:ktor-client-mock:2.3.7")
+
             }
         }
     }
@@ -79,7 +81,7 @@ tasks.register<JavaExec>("runServer") {
     group = "application"
     description = "Run Ktor server"
     classpath = sourceSets["desktopMain"].runtimeClasspath
-    mainClass.set("org.example.project.ServerMainKt") // Ensure you have a ServerMain.kt file
+    mainClass.set("org.example.project.server.ServerMainKt")
 }
 
 configurations.all {

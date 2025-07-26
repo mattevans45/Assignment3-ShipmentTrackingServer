@@ -1,5 +1,10 @@
 package org.example.project
 
+import org.example.project.model.ShipmentUpdatePayload
+import org.example.project.model.UpdateData
+import org.example.project.server.UpdateProcessor
+import org.example.project.strategy.AbstractUpdateStrategy
+import org.example.project.strategy.UpdateStrategyFactory
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,70 +14,54 @@ class UpdateProcessorTest {
     private lateinit var updateProcessor: UpdateProcessor
     private lateinit var mockStrategyFactory: UpdateStrategyFactory
     private lateinit var mockStrategy: AbstractUpdateStrategy
-    
+
     @BeforeTest
     fun setUp() {
         mockStrategyFactory = mock()
         mockStrategy = mock()
-        
-        updateProcessor = UpdateProcessor()
-        setPrivateField(updateProcessor, "strategyFactory", mockStrategyFactory)
+        updateProcessor = UpdateProcessor(mockStrategyFactory)
     }
-    
+
     @Test
-    fun processUpdateParsesUpdateLineAndExecutesStrategy() {
+    fun processUpdateParsesPayloadAndExecutesStrategy() {
         // Arrange
-        val updateLine = "CREATED,123,456"
-        whenever(mockStrategyFactory.createStrategy("CREATED")).thenReturn(mockStrategy)
-        
-        // Create a capture for the UpdateData
-        val updateDataCaptor = argumentCaptor<UpdateData>()
-        
+        val payload = ShipmentUpdatePayload("CREATED", "123", 456L, null)
+        whenever(mockStrategyFactory.create("CREATED")).thenReturn(mockStrategy)
+
         // Act
-        updateProcessor.processUpdate(updateLine)
-        
+        updateProcessor.process(payload)
+
         // Assert
-        verify(mockStrategyFactory).createStrategy("CREATED")
-        verify(mockStrategy).execute(updateDataCaptor.capture())
-        
-        val capturedData = updateDataCaptor.firstValue
-        assertEquals("CREATED", capturedData.getUpdateType())
-        assertEquals("123", capturedData.getShipmentId())
-        assertEquals(456L, capturedData.getTimestamp())
+        verify(mockStrategyFactory).create("CREATED")
+        verify(mockStrategy).execute(any())
     }
-    
+
     @Test
-    fun processUpdateHandlesMalformedUpdateLinesGracefully() {
+    fun processUpdateHandlesNoStrategy() {
         // Arrange
-        val updateLine = "INVALID"
-        
+        val payload = ShipmentUpdatePayload("UNKNOWN", "123", 456L, null)
+        whenever(mockStrategyFactory.create("UNKNOWN")).thenReturn(null)
+
         // Act
-        updateProcessor.processUpdate(updateLine)
-        
+        updateProcessor.process(payload)
+
         // Assert
-        verify(mockStrategyFactory, never()).createStrategy(any())
+        verify(mockStrategyFactory).create("UNKNOWN")
         verify(mockStrategy, never()).execute(any())
     }
-    
+
     @Test
     fun processUpdateHandlesExceptionsFromStrategyExecution() {
         // Arrange
-        val updateLine = "CREATED,123,456"
-        whenever(mockStrategyFactory.createStrategy("CREATED")).thenReturn(mockStrategy)
+        val payload = ShipmentUpdatePayload("CREATED", "123", 456L, null)
+        whenever(mockStrategyFactory.create("CREATED")).thenReturn(mockStrategy)
         whenever(mockStrategy.execute(any())).thenThrow(RuntimeException("Test exception"))
-        
-        // Act - This should not throw an exception
-        updateProcessor.processUpdate(updateLine)
-        
-        // Assert - We're mainly verifying it doesn't crash
-        verify(mockStrategyFactory).createStrategy("CREATED")
+
+        // Act - Should not throw
+        updateProcessor.process(payload)
+
+        // Assert
+        verify(mockStrategyFactory).create("CREATED")
         verify(mockStrategy).execute(any())
-    }
-    
-    // Utility method to set private fields via reflection
-    private fun setPrivateField(instance: Any, fieldName: String, value: Any) {
-        val field = instance.javaClass.getDeclaredField(fieldName)
-        field.isAccessible = true
-        field.set(instance, value)
     }
 }
